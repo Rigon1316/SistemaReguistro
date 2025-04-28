@@ -1,4 +1,7 @@
+// solo es un cambio
+
 package Vista;
+
 
 import Model.DetalleFactura;
 import java.util.ArrayList;

@@ -623,7 +623,7 @@ public class FormularioPresentacion extends javax.swing.JFrame {
     private net.sourceforge.jdatepicker.impl.UtilCalendarModel utilCalendarModel1;
     // End of variables declaration//GEN-END:variables
 
-    private int getPersonaSeleccionadaId() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+////    private int getPersonaSeleccionadaId() {
+////        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+////    }
 }
