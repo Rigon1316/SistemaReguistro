@@ -10,12 +10,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 
-
-/**
- *
- * @author Jheyson Gaona
- */
-
 @Entity
 @Table(name = "detalle_factura")
 public class DetalleFactura {

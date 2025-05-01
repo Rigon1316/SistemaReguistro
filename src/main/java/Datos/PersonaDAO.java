@@ -1,7 +1,7 @@
 package Datos;
 
 import Model.Persona;
-import Util.JpaUtil;
+import Util.JPAUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ public class PersonaDAO {
         }
 
         int result = 0;
-        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
 
         try {
             Persona personaExiste = em.createQuery(
@@ -48,7 +48,7 @@ public class PersonaDAO {
     }
 
     public List<Persona> listarPersonas() {
-        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
         List<Persona> lista = new ArrayList<>();
 
         try {
@@ -65,7 +65,7 @@ public class PersonaDAO {
     // En PersonaDAO.java
 
     public boolean eliminarPersona(int id) {
-        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
         boolean eliminado = false;
 
         try {
@@ -102,7 +102,7 @@ public class PersonaDAO {
             throw new IllegalArgumentException("La persona a actualizar no puede ser nula y debe tener un ID válido.");
         }
 
-        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
         boolean actualizado = false;
 
         try {
@@ -140,7 +140,7 @@ public class PersonaDAO {
     }
 
     public Persona buscarPorCedula(String cedula) {
-        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
         Persona persona = null;
 
         try {

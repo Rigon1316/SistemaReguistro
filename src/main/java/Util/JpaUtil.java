@@ -5,7 +5,7 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
 
-public class JpaUtil {
+public class JPAUtil {
 
     private static final EntityManagerFactory emf
             = Persistence.createEntityManagerFactory("Reguistro_PU");

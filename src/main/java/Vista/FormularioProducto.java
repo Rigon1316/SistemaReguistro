@@ -93,16 +93,12 @@ public class FormularioProducto extends javax.swing.JFrame {
                 return;
             }
 
-            List<Producto> productos = servicio.buscarProductos(codigo);
-            if (productos != null && !productos.isEmpty()) {
-                Producto productoActual = productos.get(0);
+            
+            Producto productoActual = servicio.buscarPorCodigo(codigo);
 
-                
+            if (productoActual != null) {
                 Producto producto = new Producto(codigo, nombre, descripcion, precio, stock, categoria);
-
-                
                 producto.setId(productoActual.getId());
-
                 servicio.actualizarProducto(producto);
                 cargarDatos();
                 JOptionPane.showMessageDialog(this, "Producto actualizado correctamente");
@@ -172,19 +168,21 @@ public class FormularioProducto extends javax.swing.JFrame {
 
         if (confirmacion == JOptionPane.YES_OPTION) {
             try {
-                int idProducto = Integer.parseInt(codigo);
-                boolean resultado = servicio.eliminarProducto(idProducto);
+                Producto producto = servicio.buscarPorCodigo(codigo);
+                if (producto != null) {
+                    boolean resultado = servicio.eliminarProducto(producto.getId().intValue());
 
-                if (resultado) {
-                    cargarDatos();
-                    JOptionPane.showMessageDialog(this, "Producto eliminado correctamente");
+                    if (resultado) {
+                        cargarDatos();
+                        JOptionPane.showMessageDialog(this, "Producto eliminado correctamente");
+                    } else {
+                        JOptionPane.showMessageDialog(this, "No se pudo eliminar el producto",
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 } else {
-                    JOptionPane.showMessageDialog(this, "No se pudo eliminar el producto",
+                    JOptionPane.showMessageDialog(this, "No se encontró el producto para eliminar",
                             "Error", JOptionPane.ERROR_MESSAGE);
                 }
-            } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this, "El código debe ser un número válido",
-                        "Error", JOptionPane.ERROR_MESSAGE);
             } catch (IllegalArgumentException e) {
                 JOptionPane.showMessageDialog(this, e.getMessage(),
                         "Error", JOptionPane.ERROR_MESSAGE);
@@ -230,7 +228,6 @@ public class FormularioProducto extends javax.swing.JFrame {
         btn_Buscar.setEnabled(!enModoAgregar);
         btn_Actualizar.setEnabled(!enModoAgregar);
         btn_Eliminar.setEnabled(!enModoAgregar);
-
         txt_Codigo.setEditable(enModoAgregar);
     }
 

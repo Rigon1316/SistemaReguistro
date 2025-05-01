@@ -1,32 +1,42 @@
 package Datos;
 
 import Model.Factura;
-import Util.JpaUtil;
+import Util.JPAUtil;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 
 public class FacturaDAO {
-
-    EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+    
 
     public int RegistrarFactura(Factura facturaAgregar) {
-
+        EntityManager entityManager = null;
         try {
-            em.getTransaction().begin();
-            em.persist(facturaAgregar);
-            em.getTransaction().commit();
+            
+            entityManager = JPAUtil.getEntityManagerFactory().createEntityManager();
+
+            entityManager.getTransaction().begin();
+            entityManager.persist(facturaAgregar);
+            entityManager.getTransaction().commit();
             return 0;
         } catch (Exception ex) {
-            em.getTransaction().rollback();
+            
+            if (entityManager != null && entityManager.getTransaction().isActive()) {
+                entityManager.getTransaction().rollback();
+            }
             System.err.println("Error de sesion de trabajo: " + ex.getMessage());
+            ex.printStackTrace(); 
             return 1;
         } finally {
-            em.close();
+           
+            if (entityManager != null && entityManager.isOpen()) {
+                entityManager.close();
+            }
         }
     }
 
     public Factura obtenerFacturaCompletaPorId(int idFactura) {
-        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
         try {
             return em.createQuery("""
                     SELECT f FROM Factura f
@@ -37,7 +47,6 @@ public class FacturaDAO {
                     """, Factura.class)
                     .setParameter("idFactura", idFactura)
                     .getSingleResult();
-//            
         } catch (NoResultException e) {
             return null;
         } finally {
