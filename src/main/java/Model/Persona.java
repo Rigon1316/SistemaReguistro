@@ -5,14 +5,17 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 
 
 @Entity
+@Inheritance(strategy = InheritanceType.JOINED) 
 @Table(name = "usuario")
 
-public class Persona {
+public abstract class Persona {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,6 +32,9 @@ public class Persona {
     private LocalDate fecha_de_nacimiento;
     @Column
     private int edad;
+    @Column
+    private String Direccion;
+    
 
     public Persona() {
     }
@@ -36,15 +42,26 @@ public class Persona {
     public Persona(int id) {
         this.id = id;
     }
-   
-    public Persona(String nombre, String apellido, String correo, String cedula, LocalDate fecha_de_nacimiento, int edad) {
+    
+    public Persona(int id, String nombre, String apellido, String correo, String cedula, LocalDate fecha_de_nacimiento, String Direccion) {
+        this.id = id;
         this.nombre = nombre;
         this.apellido = apellido;
         this.correo = correo;
         this.cedula = cedula;
         this.fecha_de_nacimiento = fecha_de_nacimiento;
-        this.edad = edad;
+        this.Direccion = Direccion;
     }
+
+    public Persona(String nombre, String apellido, String correo, String cedula, LocalDate fecha_de_nacimiento, String Direccion) {
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.correo = correo;
+        this.cedula = cedula;
+        this.fecha_de_nacimiento = fecha_de_nacimiento;
+        this.Direccion = Direccion;
+    }
+   
 
     public int getId() {
         return id;
@@ -102,12 +119,18 @@ public class Persona {
         this.edad = edad;
     }
 
-    
+    public String getDireccion() {
+        return Direccion;
+    }
+
+    public void setDireccion(String Direccion) {
+        this.Direccion = Direccion;
+    }
+   
+   
 
     @Override
     public String toString() {
         return "Persona{" + "id=" + id + ", nombre=" + nombre + ", apellido=" + apellido + ", correo=" + correo + ", cedula=" + cedula + ", fecha_de_nacimiento=" + fecha_de_nacimiento + ", edad=" + edad + '}';
     }
-
-    
 }

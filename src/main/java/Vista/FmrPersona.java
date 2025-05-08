@@ -1,0 +1,604 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JInternalFrame.java to edit this template
+ */
+package Vista;
+
+import Model.Cliente;
+import Model.Fidelidad;
+import Model.Persona;
+import Negocio.PersonaServicio;
+import java.awt.Color;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+import java.util.List;
+import javax.swing.BorderFactory;
+import javax.swing.JOptionPane;
+import javax.swing.border.Border;
+import javax.swing.table.DefaultTableModel;
+
+
+public class FmrPersona extends javax.swing.JInternalFrame {
+
+    private final PersonaServicio servicio;
+    private int idSeleccionado = -1;
+
+    public FmrPersona() {
+        initComponents();
+        setClosable(true);
+        setMaximizable(true);
+        setIconifiable(true);
+        setResizable(true);
+        servicio = new PersonaServicio();
+        cargarDatos();
+        controlarBotones(true);
+
+        tbl_Persona.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int fila = tbl_Persona.getSelectedRow();
+                if (fila >= 0) {
+                    cargarDatosDesdeFila(fila);
+                    controlarBotones(false);
+                }
+            }
+        });
+
+        btn_Buscar.addActionListener(e -> buscarPersona());
+    }
+
+    private void controlarBotones(boolean enModoAgregar) {
+        btn_Guardar.setEnabled(enModoAgregar);
+        btn_Buscar.setEnabled(!enModoAgregar);
+    }
+
+    public void cargarDatos() {
+        DefaultTableModel model = new DefaultTableModel();
+        model.addColumn("ID");
+        model.addColumn("Nombre");
+        model.addColumn("Apellido");
+        model.addColumn("Correo");
+        model.addColumn("Cédula");
+        model.addColumn("Fecha de nacimiento");
+        model.addColumn("Edad");
+        model.addColumn("Direccion");
+
+        List<Persona> personas = servicio.listarPersonas();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        for (Persona p : personas) {
+            Object[] fila = {
+                p.getId(),
+                p.getNombre(),
+                p.getApellido(),
+                p.getCorreo(),
+                p.getCedula(),
+                p.getFecha_de_nacimiento().format(formatter),
+                p.getEdad(),
+                p.getDireccion()
+            };
+            model.addRow(fila);
+        }
+
+        tbl_Persona.setModel(model);
+        limpiarCampos();
+    }
+
+    private void buscarPersona() {
+        String criterio = JOptionPane.showInputDialog(this, "Ingrese cédula a buscar:");
+
+        if (criterio != null && !criterio.trim().isEmpty()) {
+            Persona personaEncontrada = servicio.buscarPorCedula(criterio);
+
+            if (personaEncontrada != null) {
+
+                DefaultTableModel model = new DefaultTableModel();
+                model.addColumn("ID");
+                model.addColumn("Nombre");
+                model.addColumn("Apellido");
+                model.addColumn("Correo");
+                model.addColumn("Cédula");
+                model.addColumn("Fecha de nacimiento");
+                model.addColumn("Edad");
+                model.addColumn("Direccion");
+
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+                Object[] fila = {
+                    personaEncontrada.getId(),
+                    personaEncontrada.getNombre(),
+                    personaEncontrada.getApellido(),
+                    personaEncontrada.getCorreo(),
+                    personaEncontrada.getCedula(),
+                    personaEncontrada.getFecha_de_nacimiento().format(formatter),
+                    personaEncontrada.getEdad(),
+                    personaEncontrada.getDireccion()
+                };
+                model.addRow(fila);
+
+                tbl_Persona.setModel(model);
+
+                idSeleccionado = personaEncontrada.getId();
+                txt_Nombre.setText(personaEncontrada.getNombre());
+                txt_Apellido.setText(personaEncontrada.getApellido());
+                txt_Correo.setText(personaEncontrada.getCorreo());
+                txt_Cedula.setText(personaEncontrada.getCedula());
+                txt_Direccion.setText(personaEncontrada.getDireccion());
+
+                Date fechaConvertida = Date.from(
+                        personaEncontrada.getFecha_de_nacimiento().atStartOfDay(ZoneId.systemDefault()).toInstant()
+                );
+                jXD_fecha.setDate(fechaConvertida);
+
+                controlarBotones(false);
+            } else {
+                JOptionPane.showMessageDialog(this, "No se encontró ninguna persona con la cédula: " + criterio);
+            }
+        }
+    }
+
+    public void agregarPersona() {
+        if (ValidarFormulario()) {
+            String nombre = txt_Nombre.getText().trim();
+            String apellido = txt_Apellido.getText().trim();
+            String correo = txt_Correo.getText().trim();
+            String cedula = txt_Cedula.getText().trim();
+            String direccion = txt_Direccion.getText().trim();
+
+            Date fechaSeleccionada = jXD_fecha.getDate();
+            if (fechaSeleccionada == null) {
+                JOptionPane.showMessageDialog(this, "Por favor, seleccione una fecha válida.",
+                        "Error de validación", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            LocalDate fechaNacimiento = fechaSeleccionada.toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+            int edad = PersonaServicio.calcularEdad(fechaNacimiento);
+
+            Cliente cliente = new Cliente(nombre, apellido, correo, cedula, fechaNacimiento, direccion);
+
+            if (this.check_fidelidad.isSelected()) {
+                Fidelidad fidelidad = new Fidelidad(cliente, 0, 0, LocalDate.now());
+                cliente.setFidelidad(fidelidad);
+            }
+
+            servicio.agregarNuevaPersona(cliente);
+            cargarDatos();
+            controlarBotones(false);
+        }
+    }
+
+    private void actualizarpersona() {
+        try {
+            if (idSeleccionado == -1) {
+                JOptionPane.showMessageDialog(this, "Por favor, selecciona una persona de la tabla para actualizar.");
+                return;
+            }
+
+            if (!ValidarFormulario()) {
+                JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos correctamente.");
+                return;
+            }
+
+            String nombre = txt_Nombre.getText().trim();
+            String apellido = txt_Apellido.getText().trim();
+            String correo = txt_Correo.getText().trim();
+            String cedula = txt_Cedula.getText().trim();
+            Date fechaSeleccionada = jXD_fecha.getDate();
+            String direccion = txt_Direccion.getText().trim();
+
+            LocalDate fechaNacimiento = fechaSeleccionada.toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+
+            int edad = PersonaServicio.calcularEdad(fechaNacimiento);
+
+            Cliente persona = new Cliente();
+            persona.setId(idSeleccionado);
+            persona.setNombre(nombre);
+            persona.setApellido(apellido);
+            persona.setCorreo(correo);
+            persona.setCedula(cedula);
+            persona.setFecha_de_nacimiento(fechaNacimiento);
+            persona.setDireccion(direccion);
+            persona.setEdad(edad);
+
+            boolean actualizado = servicio.actualizar(persona);
+
+            if (actualizado) {
+                JOptionPane.showMessageDialog(this, "Persona actualizada correctamente.");
+                cargarDatos();
+                limpiarCampos();
+            } else {
+                JOptionPane.showMessageDialog(this, "No se pudo actualizar la persona.");
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al actualizar: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private boolean ValidarFormulario() {
+
+        Border bordeRojo = BorderFactory.createLineBorder(Color.RED, 2);
+        Border bordeNegro = BorderFactory.createLineBorder(Color.BLACK, 1);
+
+        boolean nombreValido = !txt_Nombre.getText().trim().isEmpty();
+        boolean apellidoValido = !txt_Apellido.getText().trim().isEmpty();
+        boolean correoValido = !txt_Correo.getText().trim().isEmpty();
+        boolean cedulaValida = !txt_Cedula.getText().trim().isEmpty();
+        boolean fechaValida = jXD_fecha.getDate() != null;
+
+        txt_Nombre.setBorder(nombreValido ? bordeNegro : bordeRojo);
+        txt_Apellido.setBorder(apellidoValido ? bordeNegro : bordeRojo);
+        txt_Correo.setBorder(correoValido ? bordeNegro : bordeRojo);
+        txt_Cedula.setBorder(cedulaValida ? bordeNegro : bordeRojo);
+        jXD_fecha.setBorder(fechaValida ? bordeNegro : bordeRojo);
+        txt_Direccion.setBorder(fechaValida ? bordeNegro : bordeRojo);
+
+        return !(txt_Nombre.getText().isEmpty() || txt_Apellido.getText().isEmpty() || txt_Correo.getText().isEmpty()
+                || txt_Cedula.getText().isEmpty() || jXD_fecha.getDate() == null || txt_Direccion.getText().isEmpty());
+    }
+
+    private void limpiarCampos() {
+        txt_Nombre.setText("");
+        txt_Apellido.setText("");
+        txt_Correo.setText("");
+        txt_Cedula.setText("");
+        jXD_fecha.setDate(null);
+        txt_Direccion.setText("");
+        idSeleccionado = -1;
+        controlarBotones(true);
+    }
+
+    private void cargarDatosDesdeFila(int fila) {
+        idSeleccionado = Integer.parseInt(tbl_Persona.getValueAt(fila, 0).toString());
+        txt_Nombre.setText(tbl_Persona.getValueAt(fila, 1).toString());
+        txt_Apellido.setText(tbl_Persona.getValueAt(fila, 2).toString());
+        txt_Correo.setText(tbl_Persona.getValueAt(fila, 3).toString());
+        txt_Cedula.setText(tbl_Persona.getValueAt(fila, 4).toString());
+
+        String fechaTexto = tbl_Persona.getValueAt(fila, 5).toString();
+        LocalDate fecha = LocalDate.parse(fechaTexto, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        Date fechaConvertida = Date.from(fecha.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+        txt_Direccion.setText(tbl_Persona.getValueAt(fila, 6).toString());
+        jXD_fecha.setDate(fechaConvertida);
+        controlarBotones(false);
+    }
+
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jPanel1 = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
+        txt_Nombre = new javax.swing.JTextField();
+        txt_Apellido = new javax.swing.JTextField();
+        txt_Correo = new javax.swing.JTextField();
+        txt_Cedula = new javax.swing.JTextField();
+        btn_Guardar = new javax.swing.JButton();
+        btn_Buscar = new javax.swing.JButton();
+        btn_Eliminar = new javax.swing.JButton();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        tbl_Persona = new javax.swing.JTable();
+        jXD_fecha = new org.jdesktop.swingx.JXDatePicker();
+        btm_actualizar = new javax.swing.JButton();
+        jLabel2 = new javax.swing.JLabel();
+        txt_Direccion = new javax.swing.JTextField();
+        check_fidelidad = new javax.swing.JCheckBox();
+
+        jPanel1.setBackground(new java.awt.Color(204, 204, 255));
+
+        jLabel1.setBackground(new java.awt.Color(204, 204, 255));
+        jLabel1.setFont(new java.awt.Font("Segoe UI", 2, 18)); // NOI18N
+        jLabel1.setForeground(new java.awt.Color(0, 0, 0));
+        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel1.setText("Persona");
+
+        jLabel3.setForeground(new java.awt.Color(0, 0, 0));
+        jLabel3.setText("Nombre:");
+
+        jLabel4.setForeground(new java.awt.Color(0, 0, 0));
+        jLabel4.setText("Apellido:");
+
+        jLabel5.setForeground(new java.awt.Color(0, 0, 0));
+        jLabel5.setText("Correo:");
+
+        jLabel6.setForeground(new java.awt.Color(0, 0, 0));
+        jLabel6.setText("Cedula:");
+
+        jLabel7.setForeground(new java.awt.Color(0, 0, 0));
+        jLabel7.setText("Fecha de nacimiento:");
+
+        txt_Nombre.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txt_NombreActionPerformed(evt);
+            }
+        });
+
+        txt_Apellido.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txt_ApellidoActionPerformed(evt);
+            }
+        });
+
+        txt_Correo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txt_CorreoActionPerformed(evt);
+            }
+        });
+
+        txt_Cedula.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txt_CedulaActionPerformed(evt);
+            }
+        });
+
+        btn_Guardar.setBackground(new java.awt.Color(51, 102, 255));
+        btn_Guardar.setIcon(new javax.swing.ImageIcon(getClass().getResource("/drive_diskette_computer_data_disk_floppy_icon_250689.png"))); // NOI18N
+        btn_Guardar.setText("Guardar");
+        btn_Guardar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn_GuardarActionPerformed(evt);
+            }
+        });
+
+        btn_Buscar.setBackground(new java.awt.Color(51, 102, 255));
+        btn_Buscar.setIcon(new javax.swing.ImageIcon(getClass().getResource("/find_search_icon_218876.png"))); // NOI18N
+        btn_Buscar.setText("Buscar");
+
+        btn_Eliminar.setBackground(new java.awt.Color(51, 102, 255));
+        btn_Eliminar.setIcon(new javax.swing.ImageIcon(getClass().getResource("/-delete-forever_90072.png"))); // NOI18N
+        btn_Eliminar.setText("Eliminar");
+        btn_Eliminar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn_EliminarActionPerformed(evt);
+            }
+        });
+
+        tbl_Persona.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null}
+            },
+            new String [] {
+                "Nombre", "Apellido", "Correo", "Cudula", "Edad"
+            }
+        ));
+        jScrollPane1.setViewportView(tbl_Persona);
+
+        btm_actualizar.setBackground(new java.awt.Color(0, 102, 255));
+        btm_actualizar.setText("Actualizar");
+        btm_actualizar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btm_actualizarActionPerformed(evt);
+            }
+        });
+
+        jLabel2.setForeground(new java.awt.Color(0, 0, 0));
+        jLabel2.setText("Direccion:");
+
+        check_fidelidad.setForeground(new java.awt.Color(0, 0, 0));
+        check_fidelidad.setText("Desea afiliarce");
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1)
+                .addGap(21, 21, 21))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btn_Guardar)
+                .addGap(99, 99, 99)
+                .addComponent(btn_Buscar)
+                .addGap(100, 100, 100)
+                .addComponent(btn_Eliminar)
+                .addGap(18, 18, 18)
+                .addComponent(btm_actualizar)
+                .addGap(42, 42, 42))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(92, 92, 92)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel4)
+                            .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 48, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 48, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                    .addComponent(check_fidelidad, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jLabel7, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 119, Short.MAX_VALUE)
+                                    .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addGap(188, 188, 188)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(txt_Nombre, javax.swing.GroupLayout.DEFAULT_SIZE, 173, Short.MAX_VALUE)
+                                    .addComponent(txt_Apellido, javax.swing.GroupLayout.DEFAULT_SIZE, 173, Short.MAX_VALUE)
+                                    .addComponent(txt_Correo, javax.swing.GroupLayout.DEFAULT_SIZE, 173, Short.MAX_VALUE)
+                                    .addComponent(txt_Cedula, javax.swing.GroupLayout.DEFAULT_SIZE, 173, Short.MAX_VALUE)
+                                    .addComponent(jXD_fecha, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(txt_Direccion)))))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(73, 73, 73)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 517, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel1)
+                .addGap(64, 64, 64)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(txt_Nombre, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4)
+                    .addComponent(txt_Apellido, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel5)
+                    .addComponent(txt_Correo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel6)
+                    .addComponent(txt_Cedula, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel7)
+                    .addComponent(jXD_fecha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel2)
+                    .addComponent(txt_Direccion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addComponent(check_fidelidad)
+                .addGap(54, 54, 54)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(btm_actualizar, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(btn_Eliminar, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btn_Buscar, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btn_Guardar, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(18, 18, 18)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 205, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+        );
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void txt_NombreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_NombreActionPerformed
+        txt_Nombre.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                char c = evt.getKeyChar();
+                if (!Character.isLetter(c) && !Character.isWhitespace(c)) {
+                    evt.consume(); // Bloquea cualquier carácter que no sea letra ni espacio
+                }
+            }
+        });
+    }//GEN-LAST:event_txt_NombreActionPerformed
+
+    private void txt_ApellidoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_ApellidoActionPerformed
+        txt_Apellido.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                char c = evt.getKeyChar();
+                if (!Character.isLetter(c) && !Character.isWhitespace(c)) {
+                    evt.consume(); // Bloquea cualquier carácter que no sea letra ni espacio
+                }
+            }
+        });
+    }//GEN-LAST:event_txt_ApellidoActionPerformed
+
+    private void txt_CorreoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_CorreoActionPerformed
+        txt_Correo.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+                char c = e.getKeyChar();
+                String validos = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@._-";
+                if (validos.indexOf(c) == -1) {
+                    e.consume(); // Solo permite caracteres válidos para emails
+                }
+            }
+        });
+    }//GEN-LAST:event_txt_CorreoActionPerformed
+
+    private void txt_CedulaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_CedulaActionPerformed
+        txt_Cedula.addKeyListener(new KeyAdapter() {
+            public void keyTyped(KeyEvent e) {
+                char c = e.getKeyChar();
+                if (!Character.isDigit(c)) {
+                    e.consume(); // Evita que se escriba si no es un número
+                }
+            }
+        });
+    }//GEN-LAST:event_txt_CedulaActionPerformed
+
+    private void btn_GuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_GuardarActionPerformed
+        agregarPersona();
+    }//GEN-LAST:event_btn_GuardarActionPerformed
+
+    private void btn_EliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_EliminarActionPerformed
+        int fila = tbl_Persona.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Seleccione una fila para eliminar",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int id = Integer.parseInt(tbl_Persona.getValueAt(fila, 0).toString());
+        int confirmacion = JOptionPane.showConfirmDialog(this,
+                "¿Está seguro de eliminar este registro?",
+                "Confirmar eliminación",
+                JOptionPane.YES_NO_OPTION);
+
+        if (confirmacion == JOptionPane.YES_OPTION) {
+            servicio.eliminarPersona(id);
+            cargarDatos();
+            limpiarCampos();
+        }
+    }//GEN-LAST:event_btn_EliminarActionPerformed
+
+    private void btm_actualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btm_actualizarActionPerformed
+
+        actualizarpersona();
+    }//GEN-LAST:event_btm_actualizarActionPerformed
+
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btm_actualizar;
+    private javax.swing.JButton btn_Buscar;
+    private javax.swing.JButton btn_Eliminar;
+    private javax.swing.JButton btn_Guardar;
+    private javax.swing.JCheckBox check_fidelidad;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JScrollPane jScrollPane1;
+    private org.jdesktop.swingx.JXDatePicker jXD_fecha;
+    private javax.swing.JTable tbl_Persona;
+    private javax.swing.JTextField txt_Apellido;
+    private javax.swing.JTextField txt_Cedula;
+    private javax.swing.JTextField txt_Correo;
+    private javax.swing.JTextField txt_Direccion;
+    private javax.swing.JTextField txt_Nombre;
+    // End of variables declaration//GEN-END:variables
+}

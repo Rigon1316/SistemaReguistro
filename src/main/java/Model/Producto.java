@@ -27,8 +27,7 @@ public class Producto implements Serializable {
     private int stock;
     @Column
     private String categoria;
-    @Column
-    private String proveedor;
+  
 
     public Producto() {
     }
@@ -103,17 +102,9 @@ public class Producto implements Serializable {
         this.categoria = categoria;
     }
 
-    public String getProveedor() {
-        return proveedor;
-    }
-
-    public void setProveedor(String proveedor) {
-        this.proveedor = proveedor;
-    }
-
     @Override
     public String toString() {
-        return "Producto{" + "id=" + id + ", codigo=" + codigo + ", nombre=" + nombre + ", descripcion=" + descripcion + ", precio=" + precio + ", stock=" + stock + ", categoria=" + categoria + ", proveedor=" + proveedor + '}';
+        return "Producto{" + "id=" + id + ", codigo=" + codigo + ", nombre=" + nombre + ", descripcion=" + descripcion + ", precio=" + precio + ", stock=" + stock + ", categoria=" + categoria + '}';
     }
-
+    
 }
