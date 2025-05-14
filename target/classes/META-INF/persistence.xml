@@ -9,6 +9,7 @@
     <class>Model.Cliente</class>
     <class>Model.Empleado</class>
     <class>Model.Fidelidad</class>
+    <class>Model.Rol</class>
     <properties>
       <property name="jakarta.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/persona_database?zeroDateTimeBehavior=CONVERT_TO_NULL"/>
       <property name="jakarta.persistence.jdbc.user" value="root"/>

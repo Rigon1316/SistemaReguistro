@@ -26,7 +26,7 @@ public abstract class Persona {
     private String apellido;
     @Column(nullable = false)
     private String correo;
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String cedula;
     @Column(nullable = false)
     private LocalDate fecha_de_nacimiento;

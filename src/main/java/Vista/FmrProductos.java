@@ -13,7 +13,7 @@ import javax.swing.table.DefaultTableModel;
 
 public class FmrProductos extends javax.swing.JInternalFrame {
 
-     private final ProductoServicio servicio;
+    private final ProductoServicio servicio;
     private DefaultTableModel tabla;
     private boolean modoAgregar = true;
 
