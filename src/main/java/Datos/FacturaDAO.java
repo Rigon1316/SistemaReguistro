@@ -7,37 +7,32 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 
 public class FacturaDAO {
-    
 
     public int RegistrarFactura(Factura facturaAgregar) {
-        EntityManager entityManager = null;
+        
+        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
         try {
-            
-            entityManager = JPAUtil.getEntityManagerFactory().createEntityManager();
+            em.getTransaction().begin();
 
-            entityManager.getTransaction().begin();
-            entityManager.persist(facturaAgregar);
-            entityManager.getTransaction().commit();
+            em.persist(facturaAgregar);
+
+            em.getTransaction().commit();
             return 0;
         } catch (Exception ex) {
-            
-            if (entityManager != null && entityManager.getTransaction().isActive()) {
-                entityManager.getTransaction().rollback();
-            }
+            em.getTransaction().rollback();
             System.err.println("Error de sesion de trabajo: " + ex.getMessage());
-            ex.printStackTrace(); 
             return 1;
         } finally {
-           
-            if (entityManager != null && entityManager.isOpen()) {
-                entityManager.close();
-            }
+            em.close();
         }
     }
 
-    public Factura obtenerFacturaCompletaPorId(int idFactura) {
+    
+    public Factura ObtenerFacturaCompletaPorId(int idFactura) {
+        
         EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
         try {
+            
             return em.createQuery("""
                     SELECT f FROM Factura f
                     JOIN FETCH f.persona
@@ -47,6 +42,9 @@ public class FacturaDAO {
                     """, Factura.class)
                     .setParameter("idFactura", idFactura)
                     .getSingleResult();
+//            return em.createQuery("SELECT p FROM Factura p WHERE p.id = :idS", Factura.class)
+//                    .setParameter("idS", idFactura)
+//                    .getSingleResult();
         } catch (NoResultException e) {
             return null;
         } finally {

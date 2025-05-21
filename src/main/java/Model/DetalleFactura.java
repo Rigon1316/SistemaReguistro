@@ -98,4 +98,5 @@ public class DetalleFactura {
         return "DetalleFactura{" + "id=" + id + ", cantidad=" + cantidad + ", precioUnitario=" + precioUnitario + ", producto=" + producto + ", factura=" + factura + '}';
     }
     
+    
 }

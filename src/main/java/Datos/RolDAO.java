@@ -15,14 +15,14 @@ public class RolDAO {
             entityManager.getTransaction().begin();
             entityManager.persist(rolAgregar);
             entityManager.getTransaction().commit();
-            return 0; 
+            return 0;
         } catch (Exception ex) {
             if (entityManager != null && entityManager.getTransaction().isActive()) {
                 entityManager.getTransaction().rollback();
             }
             System.err.println("Error al registrar rol: " + ex.getMessage());
             ex.printStackTrace();
-            return 1; 
+            return 1;
         } finally {
             if (entityManager != null && entityManager.isOpen()) {
                 entityManager.close();
@@ -54,8 +54,8 @@ public class RolDAO {
             em.close();
         }
         return eliminado;
-    } 
-    
+    }
+
     public List<Rol> listarTodos() {
         EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
         List<Rol> roles = null;
@@ -64,6 +64,21 @@ public class RolDAO {
             roles = query.getResultList();
         } catch (Exception e) {
             System.err.println("Error al listar roles: " + e.getMessage());
+        } finally {
+            em.close();
+        }
+        return roles;
+    }
+
+    public List<Rol> listarTodosConEmpleados() {
+        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
+        List<Rol> roles = null;
+        try {
+            TypedQuery<Rol> query = em.createQuery(
+                    "SELECT DISTINCT r FROM Rol r LEFT JOIN FETCH r.empleados", Rol.class);
+            roles = query.getResultList();
+        } catch (Exception e) {
+            System.err.println("Error al listar roles con empleados: " + e.getMessage());
         } finally {
             em.close();
         }

@@ -1,41 +1,31 @@
 package Vista;
 
-import Model.DAO.RolServicio;
 import Model.Empleado;
 import Model.Persona;
 import Model.Rol;
-import Servicios.EmpleadoServicio;
+import Negocio.PersonaServicio;
+import Negocio.RolServicio;
 import java.awt.Color;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-
-import java.util.ArrayList;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
 import javax.swing.BorderFactory;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.border.Border;
 import javax.swing.table.DefaultTableModel;
 
 public class FmrEmpleado extends javax.swing.JInternalFrame {
 
-    private final EmpleadoServicio servicio;
-    private final RolServicio rolServicio;
-    private DefaultTableModel tabla;
-    private String cedulaSeleccionada = null;
-    private static FmrEmpleado instance;
+    private PersonaServicio servicio;
+    private RolServicio rolservicio;
+    private final DefaultTableModel modelo;
+    private List<Persona> listadoPersonas;
 
-    public static FmrEmpleado getInstance() {
-        if (instance == null) {
-            instance = new FmrEmpleado();
-        }
-        return instance;
-    }
+    private final Border bordeRojo = BorderFactory.createLineBorder(Color.RED, 2);
+    private final Border bordeNegro = BorderFactory.createLineBorder(Color.BLACK, 1);
 
     public FmrEmpleado() {
         initComponents();
@@ -43,567 +33,378 @@ public class FmrEmpleado extends javax.swing.JInternalFrame {
         setMaximizable(true);
         setIconifiable(true);
         setResizable(true);
-        servicio = new EmpleadoServicio();
-        rolServicio = new RolServicio();
-        inicializarTabla();
-        tabla = (DefaultTableModel) tbl_Empleados.getModel();
-        cargarDatos();
-        cargarRoles();
-        controlarBotones(true);
-
-        tbl_Empleados.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int fila = tbl_Empleados.getSelectedRow();
-                if (fila >= 0) {
-                    cargarDatosDesdeFila(fila);
-                    controlarBotones(false);
-                }
-            }
-        });
-
-    }
-
-    public void cargarRoles() {
-        List<String> roles = rolServicio.listarRoles();
-        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
-
-        for (String rol : roles) {
-            model.addElement(rol);
-        }
-
-        if (model.getSize() == 0) {
-            model.addElement("Sin roles");
-        }
-
-        cmb_Roles.setModel(model);
-    }
-
-    public void actualizarComboRoles() {
-        cargarRoles();
-    }
-
-    private void inicializarTabla() {
-        DefaultTableModel model = new DefaultTableModel() {
+        this.servicio = new PersonaServicio();
+        this.rolservicio = new RolServicio();
+        this.modelo = new DefaultTableModel(
+                new String[]{"Nombre", "Apellido", "Cédula", "Correo electrónico",
+                    "Fecha de nacimiento", "Edad", "Rol", "Activo"}, 0
+        ) {
             @Override
             public boolean isCellEditable(int row, int column) {
+                // ninguna celda será editable
                 return false;
             }
         };
-        model.addColumn("Cédula");
-        model.addColumn("Nombre");
-        model.addColumn("Apellido");
-        model.addColumn("Rol");
-        model.addColumn("Dirección");
-        model.addColumn("Salario");
-        model.addColumn("Turno");
-        model.addColumn("Fecha Contratación");
 
-        tbl_Empleados.setModel(model);
+        this.tbl_Empleado.setModel(modelo);
+        cargarRoles();
+        LimpiarFormulario();
     }
 
-    public void cargarDatos() {
-        DefaultTableModel model = (DefaultTableModel) tbl_Empleados.getModel();
-        model.setRowCount(0);
-
-        List<Empleado> empleados = servicio.listarEmpleados();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        for (Empleado emp : empleados) {
-            String roles = "";
-            if (emp.getRoles() != null && !emp.getRoles().isEmpty()) {
-                StringBuilder sb = new StringBuilder();
-                for (Rol rol : emp.getRoles()) {
-                    if (sb.length() > 0) {
-                        sb.append(", ");
-                    }
-                    sb.append(rol.getNombre());
-                }
-                roles = sb.toString();
-            }
-
-            Object[] fila = {
-                emp.getCedula(),
-                emp.getNombre(),
-                emp.getApellido(),
-                roles,
-                emp.getDireccion(),
-                emp.getSalario(),
-                emp.getTurno(),
-                emp.getFechaContratacion().format(formatter)
-            };
-            model.addRow(fila);
-        }
-
-        limpiarCampos();
-    }
-
-    private void buscarEmpleado() {
-        String criterio = txt_Cedula.getText().trim();
-
-        if (!criterio.isEmpty()) {
-
-            Empleado empleadoEncontrado = servicio.buscarPorCedula(criterio);
-
-            if (empleadoEncontrado != null) {
-
-                DefaultTableModel model = (DefaultTableModel) tbl_Empleados.getModel();
-                model.setRowCount(0);
-
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-                String roles = "";
-                if (empleadoEncontrado.getRoles() != null && !empleadoEncontrado.getRoles().isEmpty()) {
-                    StringBuilder sb = new StringBuilder();
-                    for (Rol rol : empleadoEncontrado.getRoles()) {
-                        if (sb.length() > 0) {
-                            sb.append(", ");
-                        }
-                        sb.append(rol.getNombre());
-                    }
-                    roles = sb.toString();
-                }
-
-                Object[] fila = {
-                    empleadoEncontrado.getCedula(),
-                    empleadoEncontrado.getNombre(),
-                    empleadoEncontrado.getApellido(),
-                    roles,
-                    empleadoEncontrado.getDireccion(),
-                    empleadoEncontrado.getSalario(),
-                    empleadoEncontrado.getTurno(),
-                    empleadoEncontrado.getFechaContratacion().format(formatter)
-                };
-                model.addRow(fila);
-
-                cedulaSeleccionada = empleadoEncontrado.getCedula();
-                txt_Cedula.setText(empleadoEncontrado.getCedula());
-                txt_Nombre.setText(empleadoEncontrado.getNombre());
-                txt_Apellido.setText(empleadoEncontrado.getApellido());
-
-                if (empleadoEncontrado.getRoles() != null && !empleadoEncontrado.getRoles().isEmpty()) {
-                    cmb_Roles.setSelectedItem(empleadoEncontrado.getRoles().get(0).getNombre());
-                }
-
-                txt_Direccion.setText(empleadoEncontrado.getDireccion());
-                txt_Salario.setText(String.valueOf(empleadoEncontrado.getSalario()));
-                cmb_Turno.setSelectedItem(empleadoEncontrado.getTurno());
-
-                Date fechaConvertida = Date.from(
-                        empleadoEncontrado.getFechaContratacion().atStartOfDay(ZoneId.systemDefault()).toInstant()
-                );
-                jdc_Fecha_Contratacion.setDate(fechaConvertida);
-
-                controlarBotones(false);
-            } else {
-
-                Persona personaEncontrada = servicio.buscarPersonaPorCedula(criterio);
-
-                if (personaEncontrada != null) {
-
-                    txt_Cedula.setText(personaEncontrada.getCedula());
-                    txt_Nombre.setText(personaEncontrada.getNombre());
-                    txt_Apellido.setText(personaEncontrada.getApellido());
-
-                    DefaultTableModel model = (DefaultTableModel) tbl_Empleados.getModel();
-                    model.setRowCount(0);
-
-                    txt_Direccion.setText("");
-                    txt_Salario.setText("");
-                    cmb_Turno.setSelectedIndex(0);
-                    jdc_Fecha_Contratacion.setDate(null);
-
-                    JOptionPane.showMessageDialog(this, "Persona encontrada. Complete los demás datos para registrarla como empleado.");
-                    controlarBotones(true);
-                } else {
-                    JOptionPane.showMessageDialog(this, "No se encontró ninguna persona ni empleado con la cédula: " + criterio);
-                    limpiarCampos();
-                }
-            }
-        } else {
-            JOptionPane.showMessageDialog(this, "Por favor ingrese una cédula antes de buscar.");
-        }
-    }
-
-    public void agregarEmpleado() {
-        if (validarFormulario()) {
-            try {
-                String cedula = txt_Cedula.getText().trim();
-                String nombre = txt_Nombre.getText().trim();
-                String apellido = txt_Apellido.getText().trim();
-                String rolSeleccionado = cmb_Roles.getSelectedItem().toString();
-                String direccion = txt_Direccion.getText().trim();
-                double salario = Double.parseDouble(txt_Salario.getText().trim());
-                String turno = cmb_Turno.getSelectedItem().toString();
-                String correo = txt_Correo.getText().trim();
-
-                if (correo.isEmpty()) {
-                    JOptionPane.showMessageDialog(this,
-                            "El correo electrónico es obligatorio.",
-                            "Error de validación", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                Date fechaSeleccionada = jdc_Fecha_Contratacion.getDate();
-                if (fechaSeleccionada == null) {
-                    JOptionPane.showMessageDialog(this, "Por favor, seleccione una fecha de contratación válida.",
-                            "Error de validación", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                Date fechaNacimientoSeleccionada = jdc_fecha.getDate();
-                if (fechaNacimientoSeleccionada == null) {
-                    JOptionPane.showMessageDialog(this, "Por favor, seleccione una fecha de nacimiento válida.",
-                            "Error de validación", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                LocalDate fechaContratacion = fechaSeleccionada.toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDate();
-
-                LocalDate fechaNacimiento = fechaNacimientoSeleccionada.toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDate();
-
-                Empleado empleado = new Empleado();
-                empleado.setCedula(cedula);
-                empleado.setNombre(nombre);
-                empleado.setApellido(apellido);
-                empleado.setCorreo(correo);
-
-                List<Rol> listaRoles = new ArrayList<>();
-                listaRoles.add(new Rol(rolSeleccionado));
-                empleado.setRoles(listaRoles);
-
-                empleado.setDireccion(direccion);
-                empleado.setSalario(salario);
-                empleado.setTurno(turno);
-                empleado.setFechaContratacion(fechaContratacion);
-                // Establecer la fecha de nacimiento
-                empleado.setFecha_de_nacimiento(fechaNacimiento);
-
-                EmpleadoServicio empleadoServicio = new EmpleadoServicio();
-                Empleado empleadoExistente = empleadoServicio.buscarPorCedula(cedula);
-
-                if (empleadoExistente != null) {
-                    JOptionPane.showMessageDialog(this, "Ya existe un empleado con esta cédula.",
-                            "Error de registro", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                boolean registrado = empleadoServicio.agregarEmpleado(empleado) == 1;
-
-                if (registrado) {
-                    JOptionPane.showMessageDialog(this, "Empleado registrado correctamente.");
-                    cargarDatos();
-                    limpiarCampos();
-                } else {
-                    JOptionPane.showMessageDialog(this, "No se pudo registrar el empleado. Intente nuevamente.",
-                            "Error al registrar", JOptionPane.ERROR_MESSAGE);
-                }
-            } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this, "El salario debe ser un valor numérico válido.",
-                        "Error de formato", JOptionPane.ERROR_MESSAGE);
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Error al registrar: " + e.getMessage(),
-                        "Error", JOptionPane.ERROR_MESSAGE);
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void cargarDatosDesdeFila(int fila) {
-    // El código existente
-    cedulaSeleccionada = tbl_Empleados.getValueAt(fila, 0).toString();
-    txt_Cedula.setText(cedulaSeleccionada);
-    txt_Nombre.setText(tbl_Empleados.getValueAt(fila, 1).toString());
-    txt_Apellido.setText(tbl_Empleados.getValueAt(fila, 2).toString());
-
-    String roles = tbl_Empleados.getValueAt(fila, 3).toString();
-    if (!roles.isEmpty()) {
-        String primerRol = roles.split(",")[0].trim();
-        cmb_Roles.setSelectedItem(primerRol);
-    }
-
-    txt_Direccion.setText(tbl_Empleados.getValueAt(fila, 4).toString());
-    txt_Salario.setText(tbl_Empleados.getValueAt(fila, 5).toString());
-    cmb_Turno.setSelectedItem(tbl_Empleados.getValueAt(fila, 6).toString());
-
-    Empleado empleado = servicio.buscarPorCedula(cedulaSeleccionada);
-    if (empleado != null) {
-        if (empleado.getCorreo() != null) {
-            txt_Correo.setText(empleado.getCorreo());
-        } else {
-            txt_Correo.setText("");
-        }
-        
-        // Cargar fecha de nacimiento si existe
-        if (empleado.getFecha_de_nacimiento() != null) {
-            Date fechaNacimiento = Date.from(
-                empleado.getFecha_de_nacimiento().atStartOfDay(ZoneId.systemDefault()).toInstant()
-            );
-            jdc_fecha.setDate(fechaNacimiento);
-        } else {
-            jdc_fecha.setDate(null);
-        }
-    }
-
-    String fechaTexto = tbl_Empleados.getValueAt(fila, 7).toString();
-    try {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-        Date fechaContratacion = formatter.parse(fechaTexto);
-        jdc_Fecha_Contratacion.setDate(fechaContratacion);
-    } catch (Exception e) {
-        System.err.println("Error al parsear la fecha: " + e.getMessage());
-        jdc_Fecha_Contratacion.setDate(null);
-    }
-
-    controlarBotones(false);
-}
-
-    private void actualizarEmpleado() {
+    public void cargarRoles() {
         try {
-            if (cedulaSeleccionada == null) {
-                JOptionPane.showMessageDialog(this, "Por favor, selecciona un empleado de la tabla para actualizar.");
+            // Limpiar el ComboBox primero
+            cmb_Rol.removeAllItems();
+
+            // Obtener la lista de roles desde el servicio
+            List<Rol> roles = rolservicio.listarObjetosRol();
+
+            // Agregar un elemento vacío o por defecto como un String
+            cmb_Rol.addItem("-- Seleccione un rol --");
+
+            // Agregar todos los roles al ComboBox como Strings (usando sus nombres)
+            if (roles != null) {
+                for (Rol rol : roles) {
+                    cmb_Rol.addItem(rol.getNombre());
+                }
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar los roles: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void RegistrarNuevoEmpleado() {
+        if (ValidarFormulario()) {
+            Empleado nuevoEmpleado = GenerarDatosEmpleado();
+
+            if (nuevoEmpleado == null) {
                 return;
             }
 
-            if (!validarFormulario()) {
-                return;
+            int registro = servicio.AgregarPersona(nuevoEmpleado);
+            switch (registro) {
+                case 0:
+                    MostrarMensa("Ya existe la persona con ese número de cédula.",
+                            "Advertencia", JOptionPane.WARNING_MESSAGE);
+                    break;
+
+                case 1:
+                    MostrarMensa("Registro exitoso.",
+                            "Información", JOptionPane.INFORMATION_MESSAGE);
+                    ActualizarTablaRegistro();
+                    LimpiarFormulario();
+                    break;
+
+                case 2:
+                    MostrarMensa("Error interno, intentelo más tarde.",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    break;
+
+                case 3:
+                    MostrarMensa("El sistema solo permite registrar a mayores de edad.",
+                            "Advertencia", JOptionPane.QUESTION_MESSAGE);
+                    break;
             }
+        } else {
+            MostrarMensa("Debe completar todos los campos obligatorios.",
+                    "Advertencia", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
 
-            String cedula = txt_Cedula.getText().trim();
-            String nombre = txt_Nombre.getText().trim();
-            String apellido = txt_Apellido.getText().trim();
-            String rolSeleccionado = cmb_Roles.getSelectedItem().toString();
-            String direccion = txt_Direccion.getText().trim();
-            double salario = Double.parseDouble(txt_Salario.getText().trim());
-            String turno = cmb_Turno.getSelectedItem().toString();
-            String correo = txt_Correo.getText().trim();
-            if (correo.isEmpty()) {
-                JOptionPane.showMessageDialog(this,
-                        "El correo electrónico es obligatorio.",
-                        "Error de validación", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+    private void ActualizarDatosEmpleado() {
+        int filaSeleccionada = this.tbl_Empleado.getSelectedRow();
 
-            Date fechaSeleccionada = jdc_Fecha_Contratacion.getDate();
-            if (fechaSeleccionada == null) {
-                JOptionPane.showMessageDialog(this, "Por favor, seleccione una fecha de contratación válida.",
-                        "Error de validación", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            
-            Date fechaNacimientoSeleccionada = jdc_fecha.getDate();
-            if (fechaNacimientoSeleccionada == null) {
-                JOptionPane.showMessageDialog(this, "Por favor, seleccione una fecha de nacimiento válida.",
-                        "Error de validación", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            LocalDate fechaContratacion = fechaSeleccionada.toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate();
-
-            
-            LocalDate fechaNacimiento = fechaNacimientoSeleccionada.toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate();
-
-            Empleado empleado = servicio.buscarPorCedula(cedulaSeleccionada);
-            if (empleado != null) {
-                empleado.setCedula(cedula);
-                empleado.setNombre(nombre);
-                empleado.setApellido(apellido);
-                empleado.setCorreo(correo);
-
-                List<Rol> listaRoles = new ArrayList<>();
-                listaRoles.add(new Rol(rolSeleccionado));
-                empleado.setRoles(listaRoles);
-
-                empleado.setDireccion(direccion);
-                empleado.setSalario(salario);
-                empleado.setTurno(turno);
-                empleado.setFechaContratacion(fechaContratacion);
-               
-                empleado.setFecha_de_nacimiento(fechaNacimiento);
-
-                boolean actualizado = servicio.actualizarEmpleado(empleado);
+        if (filaSeleccionada >= 0) {
+            if (ValidarFormulario()) {
+                Empleado actualizarEmpleado = GenerarDatosEmpleado();
+                if (actualizarEmpleado == null) {
+                    return;
+                }
+                int idPersona = this.listadoPersonas.get(filaSeleccionada).getId();
+                boolean actualizado = this.servicio.ActualizarPersona(idPersona, actualizarEmpleado);
 
                 if (actualizado) {
-                    JOptionPane.showMessageDialog(this, "Empleado actualizado correctamente.");
-                    cargarDatos();
-                    limpiarCampos();
-                    controlarBotones(true);
+                    MostrarMensa("Registro actualizado.",
+                            "Información", JOptionPane.INFORMATION_MESSAGE);
+                    ActualizarTablaRegistro();
+                    LimpiarFormulario();
                 } else {
-                    JOptionPane.showMessageDialog(this, "No se pudo actualizar el empleado.",
-                            "Error de actualización", JOptionPane.ERROR_MESSAGE);
+                    MostrarMensa("No se pudo actualizar el registro.",
+                            "Advertencia", JOptionPane.WARNING_MESSAGE);
                 }
             }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error al actualizar: " + e.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    public void eliminarEmpleado() {
-        try {
-            if (cedulaSeleccionada == null) {
-                JOptionPane.showMessageDialog(this, "Por favor, selecciona un empleado de la tabla para eliminar.");
-                return;
-            }
+    private void EliminarRegistroPersona() {
+        int filaSeleccionada = this.tbl_Empleado.getSelectedRow();
 
-            int confirm = JOptionPane.showConfirmDialog(this,
-                    "¿Está seguro de eliminar este empleado?", "Confirmación",
+        if (filaSeleccionada >= 0) {
+            int confirmacion = JOptionPane.showConfirmDialog(null,
+                    "¿Estás seguro de eliminar esta persona?",
+                    "Confirmar eliminación",
                     JOptionPane.YES_NO_OPTION);
 
-            if (confirm == JOptionPane.YES_OPTION) {
-                boolean eliminado = servicio.eliminarEmpleado(cedulaSeleccionada);
-
+            if (confirmacion == JOptionPane.YES_OPTION) {
+                int idPersona = this.listadoPersonas.get(filaSeleccionada).getId();
+                boolean eliminado = this.servicio.EliminarPersonaPorId(idPersona);
                 if (eliminado) {
-                    JOptionPane.showMessageDialog(this, "Empleado eliminado correctamente.");
-                    cargarDatos();
-                    limpiarCampos();
-                    controlarBotones(true);
+                    MostrarMensa("Persona eliminada correctamente.",
+                            "", JOptionPane.INFORMATION_MESSAGE);
+                    ActualizarTablaRegistro();
+                    LimpiarFormulario();
                 } else {
-                    JOptionPane.showMessageDialog(this, "No se pudo eliminar el empleado.",
-                            "Error de eliminación", JOptionPane.ERROR_MESSAGE);
+                    MostrarMensa("No se pudo eliminar la persona.",
+                            "", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error al eliminar: " + e.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private boolean validarFormulario() {
-    // Ejemplo básico de validación
-    if (txt_Cedula.getText().trim().isEmpty() ||
-            txt_Nombre.getText().trim().isEmpty() ||
-            txt_Apellido.getText().trim().isEmpty() ||
-            txt_Direccion.getText().trim().isEmpty() ||
-            txt_Salario.getText().trim().isEmpty() ||
-            txt_Correo.getText().trim().isEmpty() ||
-            jdc_Fecha_Contratacion.getDate() == null ||
-            jdc_fecha.getDate() == null) { // Validar fecha de nacimiento
-        
-        JOptionPane.showMessageDialog(this, "Todos los campos son obligatorios.",
-                "Error de validación", JOptionPane.ERROR_MESSAGE);
-        return false;
-    }
-    
-    try {
-        Double.parseDouble(txt_Salario.getText().trim());
-    } catch (NumberFormatException e) {
-        JOptionPane.showMessageDialog(this, "El salario debe ser un valor numérico válido.",
-                "Error de formato", JOptionPane.ERROR_MESSAGE);
-        return false;
-    }
-    
-    return true;
-}
-
-    private void controlarBotones(boolean enModoAgregar) {
-        btn_Guardar.setEnabled(enModoAgregar);
-        btn_Actualizar.setEnabled(!enModoAgregar);
-        btn_Eliminar.setEnabled(!enModoAgregar);
-        btn_Buscar.setEnabled(true);
+    private void MostrarMensa(String msm, String cabezera, int tipoPanel) {
+        JOptionPane.showMessageDialog(null, msm, cabezera, tipoPanel);
     }
 
-    private void limpiarCampos() {
-    txt_Cedula.setText("");
-    txt_Nombre.setText("");
-    txt_Apellido.setText("");
-    txt_Direccion.setText("");
-    txt_Salario.setText("");
-    txt_Correo.setText("");
-    cmb_Turno.setSelectedIndex(0);
-    jdc_Fecha_Contratacion.setDate(null);
-    jdc_fecha.setDate(null); // Limpiar la fecha de nacimiento
-    cedulaSeleccionada = null;
-    controlarBotones(true);
-}
+    private Empleado GenerarDatosEmpleado() {
+        Empleado nuevoEmpleado = null;
+        String nombre = this.txt_Nombre.getText();
+        String apellido = this.txt_Apellido.getText();
+        String numId = this.txt_Cedula.getText();
+        String correo = this.txt_Correo.getText();
+        boolean activo = this.cbx_Active.isSelected();
+
+        try {
+            // Obtener la fecha de nacimiento
+            Date fechaSeleccionada = this.jxd_Fechanacimiento.getDate();
+            if (fechaSeleccionada == null) {
+                throw new IllegalArgumentException("Debe seleccionar una fecha válida.");
+            }
+            LocalDate fechaNacimiento = fechaSeleccionada.toInstant()
+                    .atZone(ZoneId.systemDefault()).toLocalDate();
+
+            // Obtener el rol seleccionado como String
+            String nombreRol = (String) this.cmb_Rol.getSelectedItem();
+            if (nombreRol == null || nombreRol.equals("-- Seleccione un rol --")) {
+                throw new IllegalArgumentException("Debe seleccionar un rol válido.");
+            }
+            
+            Rol rolSeleccionado = new Rol(nombreRol);
+
+            nuevoEmpleado = new Empleado(nombre, apellido, numId, correo,
+                    fechaNacimiento, rolSeleccionado, LocalDate.now(), activo);
+
+        } catch (Exception ex) {
+            MostrarMensa(ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        return nuevoEmpleado;
+    }
+
+    private void ActualizarTablaRegistro() {
+        this.modelo.setRowCount(0);
+        this.listadoPersonas = this.servicio.ListarPersonas();
+
+        DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+        for (Persona personaActual : this.listadoPersonas) {
+            Object[] fila = new Object[]{
+                personaActual.getNombre(),
+                personaActual.getApellido(),
+                personaActual.getNumIdentificacion(),
+                personaActual.getCorreo(),
+                personaActual.getFechaNacimiento().format(formato),
+                personaActual.getEdad()
+            };
+            this.modelo.addRow(fila);
+        }
+    }
+
+    private void LlenarFormularioDesdeTabla() {
+        int filaSeleccionada = this.tbl_Empleado.getSelectedRow();
+
+        if (filaSeleccionada >= 0) {
+            this.btn_Eliminar.setEnabled(true);
+            this.btn_Actualizar.setEnabled(true);
+            this.btn_Agregar.setEnabled(false);
+
+            String nombre = this.tbl_Empleado.getValueAt(filaSeleccionada, 0).toString();
+            String apellido = this.tbl_Empleado.getValueAt(filaSeleccionada, 1).toString();
+            String cedula = this.tbl_Empleado.getValueAt(filaSeleccionada, 2).toString();
+            String correo = this.tbl_Empleado.getValueAt(filaSeleccionada, 3).toString();
+            String fechaNacimientoStr = this.tbl_Empleado.getValueAt(filaSeleccionada, 4).toString();
+
+            try {
+                DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+                LocalDate fechaNacimiento = LocalDate.parse(fechaNacimientoStr, formato);
+                Date fechaConvertida = Date.from(fechaNacimiento.atStartOfDay(ZoneId.systemDefault()).toInstant());
+                this.jxd_Fechanacimiento.setDate(fechaConvertida);
+            } catch (DateTimeParseException e) {
+                this.jxd_Fechanacimiento.setDate(null);
+            }
+
+            this.txt_Nombre.setText(nombre);
+            this.txt_Apellido.setText(apellido);
+            this.txt_Cedula.setText(cedula);
+            this.txt_Correo.setText(correo);
+        }
+    }
+
+    private void LimpiarFormulario() {
+        txt_Nombre.setText("");
+        txt_Apellido.setText("");
+        txt_Cedula.setText("");
+        txt_Correo.setText("");
+        jxd_Fechanacimiento.setDate(null);
+
+        tbl_Empleado.clearSelection();
+        btn_Agregar.setEnabled(true);
+        btn_Eliminar.setEnabled(false);
+        btn_Actualizar.setEnabled(false);
+    }
+
+    private boolean ValidarFormulario() {
+        this.txt_Nombre.setBorder(this.txt_Nombre.getText().isEmpty() ? this.bordeRojo : this.bordeNegro);
+        this.txt_Apellido.setBorder(this.txt_Apellido.getText().isEmpty() ? this.bordeRojo : this.bordeNegro);
+        this.txt_Cedula.setBorder(this.txt_Cedula.getText().isEmpty() ? this.bordeRojo : this.bordeNegro);
+        this.txt_Correo.setBorder(this.txt_Correo.getText().isEmpty() ? this.bordeRojo : this.bordeNegro);
+        this.jxd_Fechanacimiento.setBorder(this.jxd_Fechanacimiento.getDate() == null ? this.bordeRojo : this.bordeNegro);
+        this.cmb_Rol.setBorder(this.cmb_Rol.getSelectedIndex() == 0 ? this.bordeRojo : this.bordeNegro);
+
+        return !(this.txt_Nombre.getText().isEmpty() || this.txt_Apellido.getText().isEmpty()
+                || this.txt_Cedula.getText().isEmpty() || this.txt_Correo.getText().isEmpty()
+                || this.jxd_Fechanacimiento.getDate() == null || this.cmb_Rol.getSelectedIndex() == 0);
+    }
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
-        jLabel1 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
-        jLabel3 = new javax.swing.JLabel();
+        lblLastnameUser = new javax.swing.JLabel();
         txt_Apellido = new javax.swing.JTextField();
-        txt_Cedula = new javax.swing.JTextField();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        tbl_Empleados = new javax.swing.JTable();
-        btn_Guardar = new javax.swing.JButton();
-        btn_Buscar = new javax.swing.JButton();
-        btn_Eliminar = new javax.swing.JButton();
-        jLabel6 = new javax.swing.JLabel();
-        cmb_Turno = new javax.swing.JComboBox<>();
-        jLabel7 = new javax.swing.JLabel();
-        jLabel8 = new javax.swing.JLabel();
-        txt_Direccion = new javax.swing.JTextField();
-        txt_Salario = new javax.swing.JTextField();
-        jLabel9 = new javax.swing.JLabel();
-        jdc_Fecha_Contratacion = new org.jdesktop.swingx.JXDatePicker();
+        lblNameUser = new javax.swing.JLabel();
         txt_Nombre = new javax.swing.JTextField();
-        btn_Actualizar = new javax.swing.JButton();
-        jLabel10 = new javax.swing.JLabel();
-        cmb_Roles = new javax.swing.JComboBox<>();
-        jLabel4 = new javax.swing.JLabel();
+        lblNumIdUser = new javax.swing.JLabel();
+        txt_Cedula = new javax.swing.JTextField();
+        lblEmailUser = new javax.swing.JLabel();
         txt_Correo = new javax.swing.JTextField();
-        jdc_fecha = new org.jdesktop.swingx.JXDatePicker();
-        jLabel5 = new javax.swing.JLabel();
+        lblDateUser = new javax.swing.JLabel();
+        cmb_Rol = new javax.swing.JComboBox<>();
+        lblDateUser1 = new javax.swing.JLabel();
+        cbx_Active = new javax.swing.JCheckBox();
+        jxd_Fechanacimiento = new org.jdesktop.swingx.JXDatePicker();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        tbl_Empleado = new javax.swing.JTable();
+        btn_Agregar = new javax.swing.JButton();
+        btn_Actualizar = new javax.swing.JButton();
+        btn_Eliminar = new javax.swing.JButton();
+        btn_Limpiar = new javax.swing.JButton();
 
-        jPanel1.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel1.setBackground(new java.awt.Color(215, 222, 233));
 
-        jLabel1.setBackground(new java.awt.Color(0, 0, 0));
-        jLabel1.setForeground(new java.awt.Color(0, 0, 0));
-        jLabel1.setText("Nombre:");
+        lblLastnameUser.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblLastnameUser.setForeground(new java.awt.Color(0, 0, 0));
+        lblLastnameUser.setText("Apellido:");
 
-        jLabel2.setForeground(new java.awt.Color(0, 0, 0));
-        jLabel2.setText("Apellido:");
-        jLabel2.setToolTipText("");
+        txt_Apellido.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        txt_Apellido.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txt_ApellidoActionPerformed(evt);
+            }
+        });
 
-        jLabel3.setForeground(new java.awt.Color(0, 0, 0));
-        jLabel3.setText("Cedula:");
+        lblNameUser.setBackground(new java.awt.Color(0, 0, 0));
+        lblNameUser.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblNameUser.setForeground(new java.awt.Color(0, 0, 0));
+        lblNameUser.setText("Nombre:");
 
-        tbl_Empleados.setModel(new javax.swing.table.DefaultTableModel(
+        txt_Nombre.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        txt_Nombre.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txt_NombreActionPerformed(evt);
+            }
+        });
+
+        lblNumIdUser.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblNumIdUser.setForeground(new java.awt.Color(0, 0, 0));
+        lblNumIdUser.setText("Cédula:");
+
+        txt_Cedula.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        txt_Cedula.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txt_CedulaActionPerformed(evt);
+            }
+        });
+        txt_Cedula.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                txt_CedulaKeyTyped(evt);
+            }
+        });
+
+        lblEmailUser.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblEmailUser.setForeground(new java.awt.Color(0, 0, 0));
+        lblEmailUser.setText("Correo:");
+
+        txt_Correo.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        txt_Correo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txt_CorreoActionPerformed(evt);
+            }
+        });
+
+        lblDateUser.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblDateUser.setForeground(new java.awt.Color(0, 0, 0));
+        lblDateUser.setText("Fecha de nacimiento:");
+
+        cmb_Rol.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        cmb_Rol.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+
+        lblDateUser1.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblDateUser1.setForeground(new java.awt.Color(0, 0, 0));
+        lblDateUser1.setText("Cargo:");
+
+        cbx_Active.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        cbx_Active.setForeground(new java.awt.Color(0, 0, 0));
+        cbx_Active.setText("Activado");
+        cbx_Active.setIconTextGap(5);
+        cbx_Active.setMaximumSize(new java.awt.Dimension(140, 40));
+        cbx_Active.setMinimumSize(new java.awt.Dimension(140, 40));
+        cbx_Active.setPreferredSize(new java.awt.Dimension(140, 40));
+
+        tbl_Empleado.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null}
             },
             new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
+                "Nombre", "Apellido", "Cedula", "Correo", "Fecha de nacimiento", "Edad"
             }
         ));
-        jScrollPane1.setViewportView(tbl_Empleados);
+        tbl_Empleado.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tbl_EmpleadoMouseClicked(evt);
+            }
+        });
+        jScrollPane1.setViewportView(tbl_Empleado);
 
-        btn_Guardar.setBackground(new java.awt.Color(153, 255, 0));
-        btn_Guardar.setForeground(new java.awt.Color(0, 0, 0));
-        btn_Guardar.setText("Guardar");
-        btn_Guardar.addActionListener(new java.awt.event.ActionListener() {
+        btn_Agregar.setText("Agregar");
+        btn_Agregar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btn_GuardarActionPerformed(evt);
+                btn_AgregarActionPerformed(evt);
             }
         });
 
-        btn_Buscar.setBackground(new java.awt.Color(153, 255, 0));
-        btn_Buscar.setForeground(new java.awt.Color(0, 0, 0));
-        btn_Buscar.setText("Buscar");
-        btn_Buscar.addActionListener(new java.awt.event.ActionListener() {
+        btn_Actualizar.setText("Actualizar");
+        btn_Actualizar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btn_BuscarActionPerformed(evt);
+                btn_ActualizarActionPerformed(evt);
             }
         });
 
-        btn_Eliminar.setBackground(new java.awt.Color(255, 0, 102));
-        btn_Eliminar.setForeground(new java.awt.Color(0, 0, 0));
         btn_Eliminar.setText("Eliminar");
         btn_Eliminar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -611,224 +412,175 @@ public class FmrEmpleado extends javax.swing.JInternalFrame {
             }
         });
 
-        jLabel6.setForeground(new java.awt.Color(0, 0, 0));
-        jLabel6.setText("Direccion:");
-
-        cmb_Turno.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Mañana", "Noche" }));
-
-        jLabel7.setForeground(new java.awt.Color(0, 0, 0));
-        jLabel7.setText("Salario");
-
-        jLabel8.setForeground(new java.awt.Color(0, 0, 0));
-        jLabel8.setText("Turno");
-
-        jLabel9.setForeground(new java.awt.Color(0, 0, 0));
-        jLabel9.setText("Fecha de Contratacion");
-
-        btn_Actualizar.setBackground(new java.awt.Color(153, 255, 0));
-        btn_Actualizar.setForeground(new java.awt.Color(0, 0, 0));
-        btn_Actualizar.setText("Actualizar");
-        btn_Actualizar.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
-        btn_Actualizar.addActionListener(new java.awt.event.ActionListener() {
+        btn_Limpiar.setText("Limpiar");
+        btn_Limpiar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btn_ActualizarActionPerformed(evt);
+                btn_LimpiarActionPerformed(evt);
             }
         });
-
-        jLabel10.setForeground(new java.awt.Color(0, 0, 0));
-        jLabel10.setText("Roles:");
-
-        cmb_Roles.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-
-        jLabel4.setForeground(new java.awt.Color(0, 0, 0));
-        jLabel4.setText("Correo:");
-
-        jLabel5.setForeground(new java.awt.Color(0, 0, 0));
-        jLabel5.setText("Fecha de nacimiento:");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jScrollPane1)
-                        .addContainerGap())
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addGap(94, 94, 94)
+                        .addGap(18, 18, 18)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 778, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(120, 120, 120)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(btn_Guardar)
-                                .addGap(76, 76, 76)
-                                .addComponent(btn_Buscar)
-                                .addGap(90, 90, 90)
-                                .addComponent(btn_Eliminar))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 56, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 56, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 56, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                            .addGap(38, 38, 38))
-                                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                            .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addGap(18, 18, 18)))
-                                    .addGroup(jPanel1Layout.createSequentialGroup()
-                                        .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 56, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGap(38, 38, 38)))
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(txt_Nombre, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 150, Short.MAX_VALUE)
-                                    .addComponent(txt_Apellido, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(txt_Direccion, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(txt_Correo, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(txt_Cedula))
-                                .addGap(68, 68, 68)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel7)
-                                    .addComponent(jLabel8)
-                                    .addComponent(jLabel9)
-                                    .addComponent(jLabel10)
-                                    .addComponent(jLabel5))))
+                            .addComponent(btn_Agregar)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(lblLastnameUser, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(lblNameUser, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(lblNumIdUser, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(lblEmailUser, javax.swing.GroupLayout.PREFERRED_SIZE, 56, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(txt_Correo, javax.swing.GroupLayout.DEFAULT_SIZE, 140, Short.MAX_VALUE)
+                                .addComponent(txt_Cedula)
+                                .addComponent(txt_Nombre)
+                                .addComponent(txt_Apellido))
+                            .addComponent(btn_Actualizar))
+                        .addGap(84, 84, 84)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(cbx_Active, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(9, 9, 9)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(txt_Salario, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(cmb_Roles, javax.swing.GroupLayout.Alignment.LEADING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(cmb_Turno, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jdc_Fecha_Contratacion, javax.swing.GroupLayout.DEFAULT_SIZE, 180, Short.MAX_VALUE)
-                                    .addComponent(jdc_fecha, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(lblDateUser, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(lblDateUser1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addGap(44, 44, 44)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(jxd_Fechanacimiento, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(cmb_Rol, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(btn_Actualizar, javax.swing.GroupLayout.PREFERRED_SIZE, 117, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(86, 86, 86))))
+                                .addComponent(btn_Eliminar)
+                                .addGap(86, 86, 86)
+                                .addComponent(btn_Limpiar)))))
+                .addContainerGap(19, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(txt_Salario, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(cmb_Roles, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(cmb_Turno, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jdc_Fecha_Contratacion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(12, 12, 12)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(jLabel4)
-                                .addComponent(txt_Correo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(jdc_fecha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(btn_Eliminar)
-                            .addComponent(btn_Guardar)
-                            .addComponent(btn_Actualizar, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(btn_Buscar)))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(91, 91, 91)
-                                .addComponent(jLabel7)
-                                .addGap(16, 16, 16)
-                                .addComponent(jLabel10)
-                                .addGap(18, 18, 18)
-                                .addComponent(jLabel8)
-                                .addGap(28, 28, 28)
-                                .addComponent(jLabel9))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(79, 79, 79)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(jPanel1Layout.createSequentialGroup()
-                                        .addGap(12, 12, 12)
-                                        .addComponent(jLabel3))
-                                    .addComponent(txt_Cedula, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel1)
-                                    .addGroup(jPanel1Layout.createSequentialGroup()
-                                        .addComponent(txt_Nombre, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                            .addComponent(txt_Apellido, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(jLabel2))))
-                                .addGap(18, 18, 18)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(txt_Direccion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel6))))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jLabel5)
-                        .addGap(0, 119, Short.MAX_VALUE)))
-                .addGap(18, 18, 18)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(16, 16, 16))
+                .addGap(104, 104, 104)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(txt_Nombre, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblNameUser, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblDateUser, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jxd_Fechanacimiento, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(txt_Apellido, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblLastnameUser, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblDateUser1, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cmb_Rol, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(txt_Cedula, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblNumIdUser, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cbx_Active, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(txt_Correo, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblEmailUser, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(95, 95, 95)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btn_Agregar)
+                    .addComponent(btn_Actualizar)
+                    .addComponent(btn_Eliminar)
+                    .addComponent(btn_Limpiar))
+                .addGap(37, 37, 37)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 284, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(23, 23, 23))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void btn_BuscarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_BuscarActionPerformed
-        buscarEmpleado();
-    }//GEN-LAST:event_btn_BuscarActionPerformed
+    private void txt_ApellidoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_ApellidoActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txt_ApellidoActionPerformed
 
-    private void btn_GuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_GuardarActionPerformed
-        agregarEmpleado();
-    }//GEN-LAST:event_btn_GuardarActionPerformed
+    private void txt_NombreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_NombreActionPerformed
 
-    private void btn_EliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_EliminarActionPerformed
-        eliminarEmpleado();
-    }//GEN-LAST:event_btn_EliminarActionPerformed
+    }//GEN-LAST:event_txt_NombreActionPerformed
+
+    private void txt_CedulaKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txt_CedulaKeyTyped
+        char c = evt.getKeyChar();
+        if (!Character.isDigit(c)) {
+            evt.consume();
+        }
+    }//GEN-LAST:event_txt_CedulaKeyTyped
+
+    private void txt_CorreoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_CorreoActionPerformed
+
+    }//GEN-LAST:event_txt_CorreoActionPerformed
+
+    private void txt_CedulaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_CedulaActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txt_CedulaActionPerformed
+
+    private void btn_AgregarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_AgregarActionPerformed
+        RegistrarNuevoEmpleado();
+    }//GEN-LAST:event_btn_AgregarActionPerformed
+
+    private void tbl_EmpleadoMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tbl_EmpleadoMouseClicked
+        LlenarFormularioDesdeTabla();
+    }//GEN-LAST:event_tbl_EmpleadoMouseClicked
 
     private void btn_ActualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_ActualizarActionPerformed
-        actualizarEmpleado();
+        ActualizarDatosEmpleado();
     }//GEN-LAST:event_btn_ActualizarActionPerformed
+
+    private void btn_EliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_EliminarActionPerformed
+        EliminarRegistroPersona();
+    }//GEN-LAST:event_btn_EliminarActionPerformed
+
+    private void btn_LimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_LimpiarActionPerformed
+        LimpiarFormulario();
+    }//GEN-LAST:event_btn_LimpiarActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btn_Actualizar;
-    private javax.swing.JButton btn_Buscar;
+    private javax.swing.JButton btn_Agregar;
     private javax.swing.JButton btn_Eliminar;
-    private javax.swing.JButton btn_Guardar;
-    private javax.swing.JComboBox<String> cmb_Roles;
-    private javax.swing.JComboBox<String> cmb_Turno;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel10;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
-    private javax.swing.JLabel jLabel8;
-    private javax.swing.JLabel jLabel9;
+    private javax.swing.JButton btn_Limpiar;
+    private javax.swing.JCheckBox cbx_Active;
+    private javax.swing.JComboBox<String> cmb_Rol;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
-    private org.jdesktop.swingx.JXDatePicker jdc_Fecha_Contratacion;
-    private org.jdesktop.swingx.JXDatePicker jdc_fecha;
-    private javax.swing.JTable tbl_Empleados;
+    private org.jdesktop.swingx.JXDatePicker jxd_Fechanacimiento;
+    private javax.swing.JLabel lblDateUser;
+    private javax.swing.JLabel lblDateUser1;
+    private javax.swing.JLabel lblEmailUser;
+    private javax.swing.JLabel lblLastnameUser;
+    private javax.swing.JLabel lblNameUser;
+    private javax.swing.JLabel lblNumIdUser;
+    private javax.swing.JTable tbl_Empleado;
     private javax.swing.JTextField txt_Apellido;
     private javax.swing.JTextField txt_Cedula;
     private javax.swing.JTextField txt_Correo;
-    private javax.swing.JTextField txt_Direccion;
     private javax.swing.JTextField txt_Nombre;
-    private javax.swing.JTextField txt_Salario;
     // End of variables declaration//GEN-END:variables
 }

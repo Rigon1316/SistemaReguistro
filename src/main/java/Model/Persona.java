@@ -1,5 +1,5 @@
 package Model;
-
+ 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -9,59 +9,72 @@ import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
+import java.time.Period;
 
 
 @Entity
-@Inheritance(strategy = InheritanceType.JOINED) 
+@Inheritance(strategy = InheritanceType.JOINED)
 @Table(name = "usuario")
-
 public abstract class Persona {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+    
     @Column(nullable = false)
     private String nombre;
+    
     @Column(nullable = false)
     private String apellido;
-    @Column(nullable = false)
-    private String correo;
+    
     @Column(nullable = false, unique = true)
-    private String cedula;
+    private String numIdentificacion;
+    
+    @Column(nullable = false, unique = true)
+    private String correo;
+    
     @Column(nullable = false)
-    private LocalDate fecha_de_nacimiento;
+    private LocalDate fechaNacimiento;
+    
     @Column
     private int edad;
-    @Column
-    private String Direccion;
+
     
-
-    public Persona() {
-    }
-
-    public Persona(int id) {
-        this.id = id;
+    public Persona(){
+        
     }
     
-    public Persona(int id, String nombre, String apellido, String correo, String cedula, LocalDate fecha_de_nacimiento, String Direccion) {
+    public Persona(String nombre, String apellido, String numIdentificacion,
+            String correo, LocalDate fechaNacimiento, int edad){
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.numIdentificacion = numIdentificacion;
+        this.correo = correo;
+        this.fechaNacimiento = fechaNacimiento;
+        this.edad = edad;
+    }
+    
+    
+    public Persona(String nombre, String apellido, String numIdentificacion,
+            String correo, LocalDate fechaNacimiento){
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.numIdentificacion = numIdentificacion;
+        this.correo = correo;
+        this.fechaNacimiento = fechaNacimiento;
+    }
+    
+    
+    public Persona(int id, String nombre, String apellido, String numIdentificacion,
+            String correo, LocalDate fechaNacimiento, int edad){
         this.id = id;
         this.nombre = nombre;
         this.apellido = apellido;
+        this.numIdentificacion = numIdentificacion;
         this.correo = correo;
-        this.cedula = cedula;
-        this.fecha_de_nacimiento = fecha_de_nacimiento;
-        this.Direccion = Direccion;
+        this.fechaNacimiento = fechaNacimiento;
+        this.edad = edad;
     }
-
-    public Persona(String nombre, String apellido, String correo, String cedula, LocalDate fecha_de_nacimiento, String Direccion) {
-        this.nombre = nombre;
-        this.apellido = apellido;
-        this.correo = correo;
-        this.cedula = cedula;
-        this.fecha_de_nacimiento = fecha_de_nacimiento;
-        this.Direccion = Direccion;
-    }
-   
 
     public int getId() {
         return id;
@@ -87,6 +100,14 @@ public abstract class Persona {
         this.apellido = apellido;
     }
 
+    public String getNumIdentificacion() {
+        return numIdentificacion;
+    }
+
+    public void setNumIdentificacion(String numIdentificacion) {
+        this.numIdentificacion = numIdentificacion;
+    }
+
     public String getCorreo() {
         return correo;
     }
@@ -95,20 +116,12 @@ public abstract class Persona {
         this.correo = correo;
     }
 
-    public String getCedula() {
-        return cedula;
+    public LocalDate getFechaNacimiento() {
+        return fechaNacimiento;
     }
 
-    public void setCedula(String cedula) {
-        this.cedula = cedula;
-    }
-
-    public LocalDate getFecha_de_nacimiento() {
-        return fecha_de_nacimiento;
-    }
-
-    public void setFecha_de_nacimiento(LocalDate fecha_de_nacimiento) {
-        this.fecha_de_nacimiento = fecha_de_nacimiento;
+    public void setFechaNacimiento(LocalDate fechaNacimiento) {
+        this.fechaNacimiento = fechaNacimiento;
     }
 
     public int getEdad() {
@@ -118,19 +131,15 @@ public abstract class Persona {
     public void setEdad(int edad) {
         this.edad = edad;
     }
-
-    public String getDireccion() {
-        return Direccion;
+    
+    public void CalcularEdad () {
+        Period periodo = Period.between(this.fechaNacimiento, LocalDate.now());
+        this.edad = periodo.getYears();
     }
-
-    public void setDireccion(String Direccion) {
-        this.Direccion = Direccion;
-    }
-   
-   
 
     @Override
     public String toString() {
-        return "Persona{" + "id=" + id + ", nombre=" + nombre + ", apellido=" + apellido + ", correo=" + correo + ", cedula=" + cedula + ", fecha_de_nacimiento=" + fecha_de_nacimiento + ", edad=" + edad + '}';
+        return "Persona{" + "id=" + id + ", nombre=" + nombre + ", apellido=" + apellido + ", numIdentificacion=" + numIdentificacion + ", correo=" + correo + ", fechaNacimiento=" + fechaNacimiento + ", edad=" + edad + '}';
     }
+    
 }

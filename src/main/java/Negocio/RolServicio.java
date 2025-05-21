@@ -1,4 +1,4 @@
-package Model.DAO;
+package Negocio;
 
 import Datos.RolDAO;
 import Model.Rol;

@@ -1,4 +1,3 @@
-
 package Model;
 
 import jakarta.persistence.Entity;
@@ -10,49 +9,51 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 
-
-
 @Entity
 @Table(name = "fidelidad")
 public class Fidelidad {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int Id;
-    
+    private int id;
+
     @OneToOne
-    @JoinColumn(name = "id_cliente", nullable = false, unique = true)
+    @JoinColumn(name = "cliente_id", nullable = false, unique = true)
     private Cliente cliente;
-    
-    private int puntosAcumulado;
-    
-    private int puntosGastados;
-    
-    private LocalDate fechaDeAfiliacion;
+
+    private int puntosAcumulados;
+
+    private int puntosCanjeados;
+
+    private LocalDate fechaAfiliacion;
 
     public Fidelidad() {
+
     }
 
-    public Fidelidad(int Id, Cliente cliente, int puntosAcumulado, int puntosGastados, LocalDate fechaDeAfiliacion) {
-        this.Id = Id;
+    public Fidelidad(Cliente cliente, int puntosAcumulados, int puntosCanjeados,
+            LocalDate fechaAfiliacion) {
         this.cliente = cliente;
-        this.puntosAcumulado = puntosAcumulado;
-        this.puntosGastados = puntosGastados;
-        this.fechaDeAfiliacion = fechaDeAfiliacion;
+        this.puntosAcumulados = puntosAcumulados;
+        this.puntosCanjeados = puntosCanjeados;
+        this.fechaAfiliacion = fechaAfiliacion;
     }
 
-    public Fidelidad(Cliente cliente, int puntosAcumulado, int puntosGastados, LocalDate fechaDeAfiliacion) {
+    public Fidelidad(int id, Cliente cliente, int puntosAcumulados, int puntosCanjeados,
+            LocalDate fechaAfiliacion) {
+        this.id = id;
         this.cliente = cliente;
-        this.puntosAcumulado = puntosAcumulado;
-        this.puntosGastados = puntosGastados;
-        this.fechaDeAfiliacion = fechaDeAfiliacion;
+        this.puntosAcumulados = puntosAcumulados;
+        this.puntosCanjeados = puntosCanjeados;
+        this.fechaAfiliacion = fechaAfiliacion;
     }
 
     public int getId() {
-        return Id;
+        return id;
     }
 
-    public void setId(int Id) {
-        this.Id = Id;
+    public void setId(int id) {
+        this.id = id;
     }
 
     public Cliente getCliente() {
@@ -63,39 +64,33 @@ public class Fidelidad {
         this.cliente = cliente;
     }
 
-    public int getPuntosAcumulado() {
-        return puntosAcumulado;
+    public int getPuntosAcumulados() {
+        return puntosAcumulados;
     }
 
-    public void setPuntosAcumulado(int puntosAcumulado) {
-        this.puntosAcumulado = puntosAcumulado;
+    public void setPuntosAcumulados(int puntosAcumulados) {
+        this.puntosAcumulados = puntosAcumulados;
     }
 
-    public int getPuntosGastados() {
-        return puntosGastados;
+    public int getPuntosCanjeados() {
+        return puntosCanjeados;
     }
 
-    public void setPuntosGastados(int puntosGastados) {
-        this.puntosGastados = puntosGastados;
+    public void setPuntosCanjeados(int puntosCanjeados) {
+        this.puntosCanjeados = puntosCanjeados;
     }
 
-    public LocalDate getFechaDeAfiliacion() {
-        return fechaDeAfiliacion;
+    public LocalDate getFechaAfiliacion() {
+        return fechaAfiliacion;
     }
 
-    public void setFechaDeAfiliacion(LocalDate fechaDeAfiliacion) {
-        this.fechaDeAfiliacion = fechaDeAfiliacion;
+    public void setFechaAfiliacion(LocalDate fechaAfiliacion) {
+        this.fechaAfiliacion = fechaAfiliacion;
     }
-
-    
 
     @Override
     public String toString() {
-        return "Fidelidad{" + "Id=" + Id + ", cliente=" + cliente + ", puntosAcumulado=" + puntosAcumulado + ", puntosGastados=" + puntosGastados + ", fechaDeAfiliacion=" + fechaDeAfiliacion + '}';
+        return "Fidelidad{" + "id=" + id + ", cliente=" + cliente + ", puntosAcumulados=" + puntosAcumulados + ", puntosCanjeados=" + puntosCanjeados + ", fechaAfiliacion=" + fechaAfiliacion + '}';
     }
-    
-    
-    
-    
-    
+
 }

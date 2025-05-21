@@ -1,164 +1,141 @@
 package Datos;
 
+import Model.Cliente;
 import Model.Persona;
 import Util.JPAUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class PersonaDAO {
 
-    public int verificarAgregarPersona(Persona personaAgregar) {
-        if (personaAgregar == null) {
-            throw new IllegalArgumentException("La persona a agregar no puede ser nula.");
-        }
-
+    public int VerificarAgregarPersona(Persona personaAgregar) {
         int result = 0;
-        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
 
+        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
         try {
             Persona personaExiste = em.createQuery(
-                    "SELECT p FROM Persona p WHERE p.cedula = :numId", Persona.class)
-                    .setParameter("numId", personaAgregar.getCedula())
+                    "SELECT p FROM Persona p WHERE p.numIdentificacion = :numId", Persona.class)
+                    .setParameter("numId", personaAgregar.getNumIdentificacion())
                     .getSingleResult();
-
             if (personaExiste != null) {
-                System.out.println("La persona ya está registrada.");
-                return result; // Se retorna 0 porque la persona ya existe
+                System.out.println("YA EXISTE LA PERSONA");
+                return result;
             }
+
         } catch (NoResultException ex) {
-            try {
-                em.getTransaction().begin();
-                em.persist(personaAgregar);
-                em.getTransaction().commit();
-                result = 1; // Se indica que la persona fue agregada correctamente
-            } catch (Exception e) {
-                if (em.getTransaction().isActive()) {
-                    em.getTransaction().rollback();
-                }
-                System.err.println("Error al agregar persona: " + e.getMessage());
-            }
+            em.getTransaction().begin();
+            em.persist(personaAgregar);
+            em.getTransaction().commit();
+            result = 1;
+        } catch (Exception ex) {
+            em.getTransaction().rollback();
+            System.err.println("Error de sesion de trabajo: " + ex.getMessage());
+            result = 2;
         } finally {
-            if (em.isOpen()) {
-                em.close();
-            }
+            em.close();
         }
         return result;
     }
-
-    public List<Persona> listarPersonas() {
+    // y si no existe se procede a registrarla
+    public int RegistrarPersona(Cliente personaAgregar) {
         EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
-        List<Persona> lista = new ArrayList<>();
-
         try {
-            lista = em.createQuery("SELECT p FROM Persona p", Persona.class).getResultList();
+            Long count = em.createQuery(
+                    "SELECT COUNT(p) FROM Persona p WHERE p.numIdentificacion = :numId", Long.class)
+                    .setParameter("numId", personaAgregar.getNumIdentificacion())
+                    .getSingleResult();
+            if (count > 0) {
+                return 0;
+            }
+
+            em.getTransaction().begin();
+            em.persist(personaAgregar);
+            em.getTransaction().commit();
+            return 1;
         } catch (Exception ex) {
-            System.err.println("Error al listar personas: " + ex.getMessage());
-        } finally {
-            if (em.isOpen()) {
-                em.close();
-            }
-        }
-        return lista;
-    }
-    // En PersonaDAO.java
-
-    public boolean eliminarPersona(int id) {
-        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
-        boolean eliminado = false;
-
-        try {
-            em.getTransaction().begin();
-
-            Persona personaEliminar = em.find(Persona.class, id);
-
-            if (personaEliminar != null) {
-
-                em.remove(personaEliminar);
-                em.getTransaction().commit();
-                eliminado = true;
-                System.out.println("Persona eliminada con éxito.");
-            } else {
-                em.getTransaction().rollback();
-                System.out.println("No se encontró la persona con ID: " + id);
-            }
-        } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
-            System.err.println("Error al eliminar persona: " + e.getMessage());
-        } finally {
-            if (em.isOpen()) {
-                em.close();
-            }
-        }
+            return 2;
 
-        return eliminado;
+        } finally {
+            em.close();
+        }
     }
 
-    public boolean actualizarPersona(Persona persona) {
-        if (persona == null || persona.getId() <= 0) {
-            throw new IllegalArgumentException("La persona a actualizar no puede ser nula y debe tener un ID válido.");
-        }
-
+    public boolean ActualizarPersona(int id, Persona personaActualizar) {
         EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
-        boolean actualizado = false;
-
         try {
+            Persona existente = em.find(Persona.class, id);
+            if (existente == null) {
+                return false;
+            }
+
             em.getTransaction().begin();
 
-            Persona personaExistente = em.find(Persona.class, persona.getId());
+            existente.setNombre(personaActualizar.getNombre());
+            existente.setApellido(personaActualizar.getApellido());
+            existente.setNumIdentificacion(personaActualizar.getNumIdentificacion());
+            existente.setCorreo(personaActualizar.getCorreo());
+            existente.setFechaNacimiento(personaActualizar.getFechaNacimiento());
 
-            if (personaExistente != null) {
+            // em.merge(personaActualizar);
+            em.getTransaction().commit();
+            return true;
 
-                personaExistente.setNombre(persona.getNombre());
-                personaExistente.setApellido(persona.getApellido());
-                personaExistente.setCorreo(persona.getCorreo());
-                personaExistente.setCedula(persona.getCedula());
-                personaExistente.setFecha_de_nacimiento(persona.getFecha_de_nacimiento());
-                personaExistente.setEdad(persona.getEdad());
-                em.getTransaction().commit();
-                actualizado = true;
-                System.out.println("Persona actualizada con éxito.");
-            } else {
-                em.getTransaction().rollback();
-                System.out.println("No se encontró la persona con ID: " + persona.getId());
-            }
-        } catch (Exception e) {
+        } catch (Exception ex) {
+           
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
-            System.err.println("Error al actualizar persona: " + e.getMessage());
+            return false;
         } finally {
-            if (em.isOpen()) {
-                em.close();
-            }
+            em.close();
         }
-
-        return actualizado;
     }
 
-    public Persona buscarPorCedula(String cedula) {
+    public boolean EliminarPersona(int numId) {
         EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
-        Persona persona = null;
-
         try {
-            persona = em.createQuery(
-                    "SELECT p FROM Persona p WHERE p.cedula = :cedula", Persona.class)
+            Persona persona = em.find(Persona.class, numId);
+
+            if (persona == null) {
+                return false;
+            }
+            em.getTransaction().begin();
+            em.remove(persona);
+            em.getTransaction().commit();
+            return true;
+        } catch (Exception ex) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            return false;
+        } finally {
+            em.close();
+        }
+    }
+
+    public List<Persona> ListarPersonasRegistradas() {
+        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
+        try {
+            return em.createQuery("SELECT p FROM Persona p", Persona.class).getResultList();
+        } finally {
+            em.close();
+        }
+    }
+
+    public Persona BuscarPersonaPorCedula(String cedula) {
+        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
+        try {
+            return em.createQuery("SELECT p FROM Persona p WHERE p.numIdentificacion = :cedula", Persona.class)
                     .setParameter("cedula", cedula)
                     .getSingleResult();
         } catch (NoResultException ex) {
-            System.out.println("No se encontró una persona con cédula: " + cedula);
-        } catch (Exception e) {
-            System.err.println("Error al buscar persona: " + e.getMessage());
+            return null;
         } finally {
-            if (em.isOpen()) {
-                em.close();
-            }
+            em.close();
         }
-
-        return persona;
     }
-
 }

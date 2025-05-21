@@ -1,11 +1,42 @@
 package Vista;
 
+import Model.Persona;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+import javax.swing.JMenu;
 
 public class SistemaDeVentas extends javax.swing.JFrame {
 
+   
+
     public SistemaDeVentas() {
         initComponents();
+        
+
     }
+
+//    private void configurar_modulos() {
+//        this.modulos.add(this.mnu_admin);
+//        this.modulos.add(mnu_admin);
+//
+//        for (var menu : this.modulos) {
+//            menu.setVisible(false);
+//        }
+//    }
+//
+//    private void cargar_modulos_usuario() {
+//        // si permiso es admin entoces activas a todos los modulos
+//        for (var permiso : this.persmisos) {
+//            Predicate<JMenu> menu = p -> p.getName().equals(permiso);
+//            Optional<JMenu> modulo = this.modulos.stream()
+//                    .filter(menu)
+//                    .findFirst();
+//            modulo.ifPresent(m -> m.setVisible(true));
+//        }
+//    }
+
+  
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -37,13 +68,15 @@ public class SistemaDeVentas extends javax.swing.JFrame {
         jDesktopPane2 = new javax.swing.JDesktopPane();
         Escritorio = new javax.swing.JDesktopPane();
         jMenuBar1 = new javax.swing.JMenuBar();
-        jMenu6 = new javax.swing.JMenu();
+        mnu_admin = new javax.swing.JMenu();
         jMenuItem2 = new javax.swing.JMenuItem();
-        jMenuItem3 = new javax.swing.JMenuItem();
         jMenuItem5 = new javax.swing.JMenuItem();
-        jMenu7 = new javax.swing.JMenu();
+        mnu_personas = new javax.swing.JMenu();
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenuItem1 = new javax.swing.JMenuItem();
+        jMenu6 = new javax.swing.JMenu();
+        jMenuItem3 = new javax.swing.JMenuItem();
+        jMenuItem6 = new javax.swing.JMenuItem();
 
         jMenu1.setText("jMenu1");
 
@@ -103,22 +136,28 @@ public class SistemaDeVentas extends javax.swing.JFrame {
         );
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowOpened(java.awt.event.WindowEvent evt) {
+                formWindowOpened(evt);
+            }
+        });
 
         javax.swing.GroupLayout EscritorioLayout = new javax.swing.GroupLayout(Escritorio);
         Escritorio.setLayout(EscritorioLayout);
         EscritorioLayout.setHorizontalGroup(
             EscritorioLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 995, Short.MAX_VALUE)
+            .addGap(0, 1197, Short.MAX_VALUE)
         );
         EscritorioLayout.setVerticalGroup(
             EscritorioLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 613, Short.MAX_VALUE)
+            .addGap(0, 842, Short.MAX_VALUE)
         );
 
-        jMenu6.setText("Administrar");
-        jMenu6.addActionListener(new java.awt.event.ActionListener() {
+        mnu_admin.setText("Administrar");
+        mnu_admin.setName("administracion"); // NOI18N
+        mnu_admin.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenu6ActionPerformed(evt);
+                mnu_adminActionPerformed(evt);
             }
         });
 
@@ -128,15 +167,7 @@ public class SistemaDeVentas extends javax.swing.JFrame {
                 jMenuItem2ActionPerformed(evt);
             }
         });
-        jMenu6.add(jMenuItem2);
-
-        jMenuItem3.setText("Factura");
-        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem3ActionPerformed(evt);
-            }
-        });
-        jMenu6.add(jMenuItem3);
+        mnu_admin.add(jMenuItem2);
 
         jMenuItem5.setText("Rol");
         jMenuItem5.addActionListener(new java.awt.event.ActionListener() {
@@ -144,14 +175,15 @@ public class SistemaDeVentas extends javax.swing.JFrame {
                 jMenuItem5ActionPerformed(evt);
             }
         });
-        jMenu6.add(jMenuItem5);
+        mnu_admin.add(jMenuItem5);
 
-        jMenuBar1.add(jMenu6);
+        jMenuBar1.add(mnu_admin);
 
-        jMenu7.setText("Personas");
-        jMenu7.addActionListener(new java.awt.event.ActionListener() {
+        mnu_personas.setText("Personas");
+        mnu_personas.setName("personas"); // NOI18N
+        mnu_personas.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenu7ActionPerformed(evt);
+                mnu_personasActionPerformed(evt);
             }
         });
 
@@ -161,7 +193,7 @@ public class SistemaDeVentas extends javax.swing.JFrame {
                 jMenuItem4ActionPerformed(evt);
             }
         });
-        jMenu7.add(jMenuItem4);
+        mnu_personas.add(jMenuItem4);
 
         jMenuItem1.setText("Personas");
         jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
@@ -169,9 +201,29 @@ public class SistemaDeVentas extends javax.swing.JFrame {
                 jMenuItem1ActionPerformed(evt);
             }
         });
-        jMenu7.add(jMenuItem1);
+        mnu_personas.add(jMenuItem1);
 
-        jMenuBar1.add(jMenu7);
+        jMenuBar1.add(mnu_personas);
+
+        jMenu6.setText("Factura");
+
+        jMenuItem3.setText("Factura");
+        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem3ActionPerformed(evt);
+            }
+        });
+        jMenu6.add(jMenuItem3);
+
+        jMenuItem6.setText("Incio ");
+        jMenuItem6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem6ActionPerformed(evt);
+            }
+        });
+        jMenu6.add(jMenuItem6);
+
+        jMenuBar1.add(jMenu6);
 
         setJMenuBar(jMenuBar1);
 
@@ -190,9 +242,9 @@ public class SistemaDeVentas extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        FmrPersona fmrpersona = new FmrPersona();
-        Escritorio.add(fmrpersona);
-        fmrpersona.show();
+        FrmCliente fmrcliente = new FrmCliente();
+        Escritorio.add(fmrcliente);
+        fmrcliente.show();
 
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
@@ -208,13 +260,13 @@ public class SistemaDeVentas extends javax.swing.JFrame {
         fmrfactura.show();
     }//GEN-LAST:event_jMenuItem3ActionPerformed
 
-    private void jMenu6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenu6ActionPerformed
+    private void mnu_adminActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mnu_adminActionPerformed
 
-    }//GEN-LAST:event_jMenu6ActionPerformed
+    }//GEN-LAST:event_mnu_adminActionPerformed
 
-    private void jMenu7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenu7ActionPerformed
+    private void mnu_personasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mnu_personasActionPerformed
 
-    }//GEN-LAST:event_jMenu7ActionPerformed
+    }//GEN-LAST:event_mnu_personasActionPerformed
 
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         FmrEmpleado frmempleado = new FmrEmpleado();
@@ -227,6 +279,16 @@ public class SistemaDeVentas extends javax.swing.JFrame {
         Escritorio.add(fmrrol);
         fmrrol.show();
     }//GEN-LAST:event_jMenuItem5ActionPerformed
+
+    private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
+        // TODO add your handling code here:
+    }//GEN-LAST:event_formWindowOpened
+
+    private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
+        FrmInicioSesion frminiciosesion  = new FrmInicioSesion();
+        Escritorio.add(frminiciosesion);
+        frminiciosesion.show();
+    }//GEN-LAST:event_jMenuItem6ActionPerformed
 
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
@@ -280,7 +342,6 @@ public class SistemaDeVentas extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;
-    private javax.swing.JMenu jMenu7;
     private javax.swing.JMenu jMenu8;
     private javax.swing.JMenu jMenu9;
     private javax.swing.JMenuBar jMenuBar1;
@@ -295,5 +356,8 @@ public class SistemaDeVentas extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JMenuItem jMenuItem5;
+    private javax.swing.JMenuItem jMenuItem6;
+    private javax.swing.JMenu mnu_admin;
+    private javax.swing.JMenu mnu_personas;
     // End of variables declaration//GEN-END:variables
 }
